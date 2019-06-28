@@ -21,38 +21,77 @@
 
 
 
+/**
+ * Load the binary bytes from a .ls8 source file into a RAM array
+ */
+// TODO: Replace this with something less hard-coded
 
-void cpu_load(struct cpu *cpu)
+// void cpu_load(struct cpu *cpu)
+// {
+//   char data[DATA_LEN] = {
+//     // From print8.ls8
+//     0b10000010, // LDI R0,8
+//     0b00000000,
+//     0b00001000,
+//     0b01000111, // PRN R0
+//     0b00000000,
+//     0b00000001  // HLT
+//   };
+
+//   int address = 0;
+
+//   for (int i = 0; i < DATA_LEN; i++) {
+//     cpu->ram[address++] = data[i];
+//   }
+
+  
+// }
+
+// Load the binary bytes from a .ls8 source file into a RAM array
+// TODO: Replace this with something less hard-coded:
+
+void cpu_load(struct cpu *cpu, int argc, char *argv[])
 {
-  char data[DATA_LEN] = {
-    // From print8.ls8
-    0b10000010, // LDI R0,8
-    0b00000000,
-    0b00001000,
-    0b01000111, // PRN R0
-    0b00000000,
-    0b00000001  // HLT
-  };
 
-  int address = 0;
-
-  for (int i = 0; i < DATA_LEN; i++) {
-    cpu->ram[address++] = data[i];
+  if (argc < 2)
+  {
+    printf("Error\n");
+    exit(1);
   }
-
-  // TODO: Replace this with something less hard-coded
+  char *file_name = argv[1];
+  
+  FILE  *fpr;
+    char f_line[1024];
+    int address = 0;
+  fpr = fopen(file_name, "r");
+  if( fpr == NULL) {
+    fprintf(stderr, "Error\n");
+    exit(1);
+  } 
+    
+   while (fgets(f_line, 1024, fpr) != NULL) {
+    char *endptr;
+    unsigned char i = strtoul(f_line, &endptr,2);
+    if (endptr == f_line) {
+      continue;
+    }
+   cpu->ram[address] = i;
+   address++;
+  }
+  fclose(fpr);
 }
 
-/**
- * ALU
- */
+
+
+
+// ALU:
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
   switch (op) {
     case ALU_MUL:
       // TODO
+      cpu->registers[regA] = cpu->registers[regA] * cpu->registers[regB];
       break;
-
     // TODO: implement more ALU ops
   }
 }
@@ -77,16 +116,18 @@ void cpu_run(struct cpu *cpu)
     switch(IR){
        // 5. Do whatever the instruction should do according to the spec.
        case HLT://Halt the CPU
-        return;
+        running = 0;
+        break;
        case LDI://LDI register immediate //set value of register to interger
         cpu->registers[operandA] = operandB;
         break;
        case PRN://PRN print numeric value stored in given register
-        printf("%d/n", cpu->registers[operandA]);
+        printf("%d\n", cpu->registers[operandA]);
         break;
+        case MUL:
+        alu(cpu, ALU_MUL, operandA, operandB);
        default:
-        printf("Error");
-        exit(1);
+        break;
     }
     // 6. Move the PC to the next instruction.
     cpu->PC += (operands + 1);
