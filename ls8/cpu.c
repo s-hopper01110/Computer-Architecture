@@ -93,6 +93,15 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
       cpu->registers[regA] = cpu->registers[regA] * cpu->registers[regB];
       break;
     // TODO: implement more ALU ops
+    case ALU_CMP:
+      if(cpu->registers[regA] == cpu->registers[regB]){
+        cpu->FL = 0b00000001;
+      }else if(cpu->registers[regA] > cpu->registers[regB]){
+        cpu->FL = 0b00000010;
+      }else if(cpu->registers[regA] < cpu->registers[regB]){
+        cpu->FL = 0b00000100;
+      }
+      break;
   }
 }
 
@@ -108,7 +117,7 @@ void cpu_run(struct cpu *cpu)
     // 1. Get the value of the current instruction (in address PC).
     unsigned char IR = cpu->ram[cpu->PC];
     // 2. Figure out how many operands this next instruction requires
-    unsigned char operands = IR >> 6;
+    unsigned int operands = IR >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
     unsigned char operandA = cpu_ram_read(cpu, cpu->PC + 1);
     unsigned char operandB = cpu_ram_read(cpu, cpu->PC + 2);
@@ -126,11 +135,33 @@ void cpu_run(struct cpu *cpu)
         break;
         case MUL:
         alu(cpu, ALU_MUL, operandA, operandB);
+        break;
+        //Sprint Challenge 
+        case CMP:
+        alu(cpu, ALU_CMP, operandA, operandB);
+         break;
+
+        case JMP:
+        cpu->PC = cpu->registers[operandA];
+        operands = 0;
+        break;
+        case JEQ:
+        if(cpu->FL == 1){
+          cpu->PC = cpu->registers[operandA];
+          operands = 0;
+        }
+        break;
+        case JNE:
+        if(cpu->FL == 0){
+          cpu->PC = cpu->registers[operandA];
+          operands = 0;
+        }
+        break;
        default:
         break;
     }
     // 6. Move the PC to the next instruction.
-    cpu->PC += (operands + 1);
+      cpu->PC += (operands + 1);
   }
 } 
 
@@ -141,6 +172,8 @@ void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
   cpu->PC = 0;
+  //Sprint Challenge 
+  cpu->FL = 0; 
   //memset - fill a block of memory with a particular value
   memset(cpu->registers, 0, sizeof(cpu->registers));
   memset(cpu->ram, 0, sizeof(cpu->ram));
